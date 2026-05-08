@@ -1,0 +1,15 @@
+# Core
+torch>=2.2.0
+transformers>=4.46.0
+datasets>=2.18.0
+peft>=0.10.0
+trl>=0.8.1
+accelerate>=0.27.0
+
+# QLoRA quantization
+bitsandbytes>=0.43.0
+
+# Optional but recommended
+sentencepiece
+protobuf
+scipy
