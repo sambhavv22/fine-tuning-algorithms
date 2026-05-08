@@ -13,44 +13,44 @@ from peft import LoraConfig, TaskType
 from trl import SFTTrainer, SFTConfig
 from hf_auth import login_huggingface, ensure_model
 
-MODEL_ID   = "meta-llama/Llama-3.2-1B-Instruct"
-DATA_PATH  = "cybersecurity_lora_dataset.jsonl"
+MODEL_ID = "meta-llama/Llama-3.2-1B-Instruct"
+DATA_PATH = "cybersecurity_lora_dataset.jsonl"
 OUTPUT_DIR = "./outputs/qlora"
 
 BNB_CONFIG = BitsAndBytesConfig(
-    load_in_4bit              = True,
-    bnb_4bit_quant_type       = "nf4",
-    bnb_4bit_compute_dtype    = torch.float16,
-    bnb_4bit_use_double_quant = True,
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.bfloat16,
+    bnb_4bit_use_double_quant=True,
 )
 
 LORA_CONFIG = LoraConfig(
-    task_type      = TaskType.CAUSAL_LM,
-    r              = 64,
-    lora_alpha     = 128,
-    lora_dropout   = 0.05,
-    target_modules = ["q_proj", "v_proj", "k_proj", "o_proj",
-                      "gate_proj", "up_proj", "down_proj"],
-    bias           = "none",
+    task_type=TaskType.CAUSAL_LM,
+    r=64,
+    lora_alpha=128,
+    lora_dropout=0.05,
+    target_modules=["q_proj", "v_proj", "k_proj", "o_proj",
+                    "gate_proj", "up_proj", "down_proj"],
+    bias="none",
 )
 
 SFT_CFG = SFTConfig(
-    output_dir                  = OUTPUT_DIR,
-    num_train_epochs            = 3,
-    per_device_train_batch_size = 2,
-    gradient_accumulation_steps = 8,
-    learning_rate               = 2e-4,
-    lr_scheduler_type           = "cosine",
-    warmup_steps                = 10,
-    logging_steps               = 10,
-    save_strategy               = "epoch",
-    report_to                   = "none",
-    optim                       = "paged_adamw_8bit",
-    fp16                        = True,
+    output_dir=OUTPUT_DIR,
+    num_train_epochs=3,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=8,
+    learning_rate=2e-4,
+    lr_scheduler_type="cosine",
+    warmup_steps=10,
+    logging_steps=10,
+    save_strategy="epoch",
+    report_to="none",
+    optim="paged_adamw_8bit",
+    bf16=True,
     # SFT-specific
-    max_length                  = 512,
-    dataset_text_field          = "text",
-    packing                     = True,
+    max_length=512,
+    dataset_text_field="text",
+    packing=True,
 )
 
 
@@ -79,17 +79,17 @@ def main():
 
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
-        quantization_config = BNB_CONFIG,
-        device_map          = "auto",
+        quantization_config=BNB_CONFIG,
+        device_map="auto",
     )
 
     # Pass peft_config directly — SFTTrainer handles prepare_model_for_kbit_training internally
     trainer = SFTTrainer(
-        model            = model,
-        processing_class = tokenizer,
-        args             = SFT_CFG,
-        train_dataset    = dataset,
-        peft_config      = LORA_CONFIG,
+        model=model,
+        processing_class=tokenizer,
+        args=SFT_CFG,
+        train_dataset=dataset,
+        peft_config=LORA_CONFIG,
     )
     trainer.train()
     trainer.model.save_pretrained(OUTPUT_DIR)
